@@ -100,8 +100,9 @@ make clean
 
 | Secret | Description |
 |--------|-------------|
-| `AWS_ACCESS_KEY_ID` | IAM user access key |
-| `AWS_SECRET_ACCESS_KEY` | IAM user secret key |
+| `AWS_ROLE_TO_ASSUME` | (Recommended) IAM role ARN for GitHub OIDC federation |
+| `AWS_ACCESS_KEY_ID` | IAM user access key (used when `AWS_ROLE_TO_ASSUME` is not set) |
+| `AWS_SECRET_ACCESS_KEY` | IAM user secret key (used when `AWS_ROLE_TO_ASSUME` is not set) |
 
 ### Deploy via GitHub Actions
 
