@@ -1,0 +1,62 @@
+name: Deploy to Elastic Beanstalk
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  AWS_REGION: us-east-1
+  EB_APP_NAME: LKS-Leaderboard-App
+  EB_ENV_NAME: LKS-Leaderboard-Env
+  S3_BUCKET: elasticbeanstalk-us-east-1-123456789012   # GANTI dengan bucket Beanstalk Anda
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Create deployment package
+      run: |
+        zip -r deploy.zip . -x "*.git*" ".github/*" "*.env*" "*.pem*" ".gitignore"
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Upload to S3
+      run: |
+        TIMESTAMP=$(date +%Y%m%d%H%M%S)
+        aws s3 cp deploy.zip s3://${{ env.S3_BUCKET }}/deploy-${TIMESTAMP}.zip
+
+    - name: Create application version
+      run: |
+        TIMESTAMP=$(date +%Y%m%d%H%M%S)
+        VERSION_LABEL="v-${TIMESTAMP}"
+        aws elasticbeanstalk create-application-version \
+          --application-name ${{ env.EB_APP_NAME }} \
+          --version-label ${VERSION_LABEL} \
+          --source-bundle S3Bucket=${{ env.S3_BUCKET }},S3Key=deploy-${TIMESTAMP}.zip
+
+    - name: Update environment
+      run: |
+        TIMESTAMP=$(date +%Y%m%d%H%M%S)
+        VERSION_LABEL="v-${TIMESTAMP}"
+        aws elasticbeanstalk update-environment \
+          --environment-name ${{ env.EB_ENV_NAME }} \
+          --version-label ${VERSION_LABEL}
