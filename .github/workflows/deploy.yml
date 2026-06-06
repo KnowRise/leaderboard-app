@@ -18,6 +18,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Generate deployment version
+      id: version
+      run: |
+        DEPLOY_ID=$(date +%Y%m%d%H%M%S)
+        echo "deploy_id=$DEPLOY_ID" >> "$GITHUB_OUTPUT"
+        echo "version_label=v-$DEPLOY_ID" >> "$GITHUB_OUTPUT"
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -41,22 +48,17 @@ jobs:
 
     - name: Upload to S3
       run: |
-        TIMESTAMP=$(date +%Y%m%d%H%M%S)
-        aws s3 cp deploy.zip s3://${{ env.S3_BUCKET }}/deploy-${TIMESTAMP}.zip
+        aws s3 cp deploy.zip s3://${{ env.S3_BUCKET }}/deploy-${{ steps.version.outputs.deploy_id }}.zip
 
     - name: Create application version
       run: |
-        TIMESTAMP=$(date +%Y%m%d%H%M%S)
-        VERSION_LABEL="v-${TIMESTAMP}"
         aws elasticbeanstalk create-application-version \
           --application-name ${{ env.EB_APP_NAME }} \
-          --version-label ${VERSION_LABEL} \
-          --source-bundle S3Bucket=${{ env.S3_BUCKET }},S3Key=deploy-${TIMESTAMP}.zip
+          --version-label ${{ steps.version.outputs.version_label }} \
+          --source-bundle S3Bucket=${{ env.S3_BUCKET }},S3Key=deploy-${{ steps.version.outputs.deploy_id }}.zip
 
     - name: Update environment
       run: |
-        TIMESTAMP=$(date +%Y%m%d%H%M%S)
-        VERSION_LABEL="v-${TIMESTAMP}"
         aws elasticbeanstalk update-environment \
           --environment-name ${{ env.EB_ENV_NAME }} \
-          --version-label ${VERSION_LABEL}
+          --version-label ${{ steps.version.outputs.version_label }}
