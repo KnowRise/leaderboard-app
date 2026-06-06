@@ -8,7 +8,7 @@ env:
   AWS_REGION: us-east-1
   EB_APP_NAME: LKS-Leaderboard-App
   EB_ENV_NAME: LKS-Leaderboard-Env
-  S3_BUCKET: elasticbeanstalk-us-east-1-123456789012   # GANTI dengan bucket Beanstalk Anda
+  S3_BUCKET: elasticbeanstalk-us-east-1-851382689048   # GANTI dengan bucket Beanstalk Anda
 
 jobs:
   deploy:
